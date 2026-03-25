@@ -5,6 +5,18 @@ import { useEffect, useRef, useState } from "react";
 const POLL_INTERVAL_MS = 5000;
 const AUTOSCROLL_TICK_MS = 1200;
 
+async function requestWakeLock() {
+  if (typeof navigator === "undefined" || !("wakeLock" in navigator)) {
+    return null;
+  }
+
+  try {
+    return await navigator.wakeLock.request("screen");
+  } catch {
+    return null;
+  }
+}
+
 function formatStatus(item) {
   if (!item) return "";
   const minutes = Math.floor((item.progressMs || 0) / 60000);
@@ -50,10 +62,17 @@ export default function HomePage() {
   const [autoScroll, setAutoScroll] = useState(true);
   const [activeLine, setActiveLine] = useState(0);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [wakeLockEnabled, setWakeLockEnabled] = useState(true);
+  const [wakeLockSupported, setWakeLockSupported] = useState(false);
   const pollingRef = useRef(null);
   const scrollTimerRef = useRef(null);
   const collapseTimerRef = useRef(null);
   const lyricsRef = useRef(null);
+  const wakeLockRef = useRef(null);
+
+  useEffect(() => {
+    setWakeLockSupported(typeof navigator !== "undefined" && "wakeLock" in navigator);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -178,6 +197,58 @@ export default function HomePage() {
     };
   }, [state.item?.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function syncWakeLock() {
+      if (!wakeLockEnabled || !state.item?.isPlaying) {
+        if (wakeLockRef.current) {
+          await wakeLockRef.current.release().catch(() => {});
+          wakeLockRef.current = null;
+        }
+        return;
+      }
+
+      const lock = await requestWakeLock();
+      if (cancelled || !lock) {
+        return;
+      }
+
+      wakeLockRef.current = lock;
+      lock.addEventListener("release", () => {
+        if (wakeLockRef.current === lock) {
+          wakeLockRef.current = null;
+        }
+      });
+    }
+
+    async function handleVisibility() {
+      if (document.visibilityState === "visible" && wakeLockEnabled && state.item?.isPlaying) {
+        const lock = await requestWakeLock();
+        if (!cancelled && lock) {
+          wakeLockRef.current = lock;
+        }
+      }
+    }
+
+    syncWakeLock();
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [wakeLockEnabled, state.item?.isPlaying, state.item?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, []);
+
   async function refreshNow() {
     setState((current) => ({ ...current, status: current.status === "signed-out" ? current.status : "loading" }));
     try {
@@ -279,6 +350,15 @@ export default function HomePage() {
               >
                 {autoScroll ? "Autoscroll activo" : "Autoscroll manual"}
               </button>
+              {wakeLockSupported ? (
+                <button
+                  className={`toggle-button ${wakeLockEnabled ? "is-enabled" : ""}`}
+                  onClick={() => setWakeLockEnabled((value) => !value)}
+                  type="button"
+                >
+                  {wakeLockEnabled ? "Pantalla activa" : "Pantalla normal"}
+                </button>
+              ) : null}
               <a className="secondary-link" href="/api/auth/logout">
                 Cerrar sesion
               </a>
