@@ -49,8 +49,10 @@ export default function HomePage() {
   });
   const [autoScroll, setAutoScroll] = useState(true);
   const [activeLine, setActiveLine] = useState(0);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const pollingRef = useRef(null);
   const scrollTimerRef = useRef(null);
+  const collapseTimerRef = useRef(null);
   const lyricsRef = useRef(null);
 
   useEffect(() => {
@@ -154,6 +156,28 @@ export default function HomePage() {
     };
   }, [state.item?.id, state.item?.progressMs, state.item?.durationMs, state.item?.isPlaying, state.lyrics?.plainText, autoScroll]);
 
+  useEffect(() => {
+    if (collapseTimerRef.current) {
+      window.clearTimeout(collapseTimerRef.current);
+    }
+
+    if (!state.item) {
+      setHeaderCollapsed(false);
+      return undefined;
+    }
+
+    setHeaderCollapsed(false);
+    collapseTimerRef.current = window.setTimeout(() => {
+      setHeaderCollapsed(true);
+    }, 4500);
+
+    return () => {
+      if (collapseTimerRef.current) {
+        window.clearTimeout(collapseTimerRef.current);
+      }
+    };
+  }, [state.item?.id]);
+
   async function refreshNow() {
     setState((current) => ({ ...current, status: current.status === "signed-out" ? current.status : "loading" }));
     try {
@@ -204,7 +228,22 @@ export default function HomePage() {
 
   return (
     <main className={`app-shell ${hasPlayback ? "is-immersive" : ""}`}>
-      <section className={`hero-panel ${hasPlayback ? "is-condensed" : ""}`}>
+      <section
+        className={`hero-panel ${hasPlayback ? "is-condensed" : ""} ${
+          headerCollapsed ? "is-collapsed" : ""
+        }`}
+        onClick={() => {
+          if (hasPlayback && headerCollapsed) {
+            setHeaderCollapsed(false);
+            if (collapseTimerRef.current) {
+              window.clearTimeout(collapseTimerRef.current);
+            }
+            collapseTimerRef.current = window.setTimeout(() => {
+              setHeaderCollapsed(true);
+            }, 4500);
+          }
+        }}
+      >
         <div className="hero-copy">
           <span className="eyebrow">Spotify Lyrics Companion</span>
           {hasPlayback ? (
@@ -248,7 +287,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={`now-playing-panel ${hasPlayback ? "is-immersive" : ""}`}>
+      <section
+        className={`now-playing-panel ${hasPlayback ? "is-immersive" : ""} ${
+          headerCollapsed ? "is-expanded" : ""
+        }`}
+      >
         {isLoading ? (
           <div className="empty-state">
             <p>Cargando reproduccion actual...</p>

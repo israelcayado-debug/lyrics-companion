@@ -71,6 +71,29 @@ button {
 .hero-panel.is-condensed {
   padding: 16px 18px;
   margin-bottom: 10px;
+  transition:
+    opacity 320ms ease,
+    transform 320ms ease,
+    max-height 320ms ease,
+    padding 320ms ease,
+    margin 320ms ease;
+  overflow: hidden;
+  max-height: 220px;
+}
+
+.hero-panel.is-condensed.is-collapsed {
+  opacity: 0.15;
+  transform: translateY(-8px);
+  max-height: 22px;
+  padding-top: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+
+.hero-panel.is-condensed.is-collapsed .hero-copy h1,
+.hero-panel.is-condensed.is-collapsed .hero-copy p,
+.hero-panel.is-condensed.is-collapsed .actions {
+  display: none;
 }
 
 .hero-copy h1 {
@@ -144,6 +167,11 @@ button {
   padding: 16px 16px 20px;
   background:
     linear-gradient(180deg, rgba(7, 10, 18, 0.96) 0%, rgba(8, 11, 18, 0.88) 100%);
+  transition: min-height 320ms ease, padding 320ms ease;
+}
+
+.now-playing-panel.is-immersive.is-expanded {
+  min-height: calc(100vh - 54px);
 }
 
 .song-header {
@@ -258,6 +286,12 @@ button {
 
   .hero-panel.is-condensed {
     padding: 14px 14px 12px;
+  }
+
+  .hero-panel.is-condensed.is-collapsed {
+    max-height: 20px;
+    padding-top: 6px;
+    padding-bottom: 4px;
   }
 
   .hero-panel.is-condensed .hero-copy h1 {
