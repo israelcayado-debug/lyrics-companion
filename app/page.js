@@ -2,9 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const POLL_INTERVAL_MS = 15000;
+const POLL_INTERVAL_MS = 5000;
+const AUTOSCROLL_TICK_MS = 1200;
 
-function LyricsBlock({ text }) {
+function formatStatus(item) {
+  if (!item) return "";
+  const minutes = Math.floor((item.progressMs || 0) / 60000);
+  const seconds = Math.floor(((item.progressMs || 0) % 60000) / 1000)
+    .toString()
+    .padStart(2, "0");
+  return item.isPlaying ? `En reproduccion · ${minutes}:${seconds}` : `Pausado · ${minutes}:${seconds}`;
+}
+
+function LyricsBlock({ text, activeIndex, lyricsRef }) {
   if (!text) {
     return (
       <div className="empty-state">
@@ -14,9 +24,14 @@ function LyricsBlock({ text }) {
   }
 
   return (
-    <div className="lyrics-card">
+    <div className="lyrics-card" ref={lyricsRef}>
       {text.split("\n").map((line, index) => (
-        <p key={`${index}-${line.slice(0, 12)}`} className="lyric-line">
+        <p
+          key={`${index}-${line.slice(0, 12)}`}
+          className={`lyric-line ${index === activeIndex ? "is-active" : ""} ${
+            index < activeIndex ? "is-past" : ""
+          }`}
+        >
           {line || "\u00A0"}
         </p>
       ))}
@@ -30,9 +45,13 @@ export default function HomePage() {
     item: null,
     lyrics: null,
     provider: null,
-    error: null,
+      error: null,
   });
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [activeLine, setActiveLine] = useState(0);
   const pollingRef = useRef(null);
+  const scrollTimerRef = useRef(null);
+  const lyricsRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -94,6 +113,90 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const text = state.lyrics?.plainText || "";
+    const lines = text ? text.split("\n") : [];
+    const scroller = lyricsRef.current;
+
+    if (!scroller || !lines.length) {
+      setActiveLine(0);
+      return undefined;
+    }
+
+    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const durationMs = Math.max(state.item?.durationMs || 0, 1);
+    const progressMs = Math.min(state.item?.progressMs || 0, durationMs);
+    const ratio = progressMs / durationMs;
+    const targetScroll = maxScroll * ratio;
+    const initialLine = Math.min(lines.length - 1, Math.floor(ratio * lines.length));
+
+    scroller.scrollTo({ top: targetScroll, behavior: "smooth" });
+    setActiveLine(initialLine);
+
+    if (!autoScroll || !state.item?.isPlaying || maxScroll === 0) {
+      return undefined;
+    }
+
+    let currentProgress = progressMs;
+    scrollTimerRef.current = window.setInterval(() => {
+      currentProgress = Math.min(currentProgress + AUTOSCROLL_TICK_MS, durationMs);
+      const nextRatio = currentProgress / durationMs;
+      const nextScroll = maxScroll * nextRatio;
+      const nextLine = Math.min(lines.length - 1, Math.floor(nextRatio * lines.length));
+      scroller.scrollTo({ top: nextScroll, behavior: "smooth" });
+      setActiveLine(nextLine);
+    }, AUTOSCROLL_TICK_MS);
+
+    return () => {
+      if (scrollTimerRef.current) {
+        window.clearInterval(scrollTimerRef.current);
+      }
+    };
+  }, [state.item?.id, state.item?.progressMs, state.item?.durationMs, state.item?.isPlaying, state.lyrics?.plainText, autoScroll]);
+
+  async function refreshNow() {
+    setState((current) => ({ ...current, status: current.status === "signed-out" ? current.status : "loading" }));
+    try {
+      const response = await fetch("/api/playback", {
+        cache: "no-store",
+        credentials: "include",
+      });
+
+      if (response.status === 401) {
+        setState({ status: "signed-out", item: null, lyrics: null, provider: null, error: null });
+        return;
+      }
+
+      const payload = await response.json();
+      if (!response.ok) {
+        setState({
+          status: "error",
+          item: null,
+          lyrics: null,
+          provider: null,
+          error: payload.error || "No se pudo cargar la reproduccion actual.",
+        });
+        return;
+      }
+
+      setState({
+        status: "ready",
+        item: payload.item,
+        lyrics: payload.lyrics,
+        provider: payload.provider,
+        error: null,
+      });
+    } catch {
+      setState({
+        status: "error",
+        item: null,
+        lyrics: null,
+        provider: null,
+        error: "Error de red al consultar Spotify.",
+      });
+    }
+  }
+
   const isSignedOut = state.status === "signed-out";
   const isLoading = state.status === "loading";
   const item = state.item;
@@ -117,12 +220,15 @@ export default function HomePage() {
             </a>
           ) : (
             <>
+              <button className="primary-button" onClick={refreshNow} type="button">
+                Actualizar ahora
+              </button>
               <button
-                className="primary-button"
-                onClick={() => window.location.reload()}
+                className={`toggle-button ${autoScroll ? "is-enabled" : ""}`}
+                onClick={() => setAutoScroll((value) => !value)}
                 type="button"
               >
-                Actualizar ahora
+                {autoScroll ? "Autoscroll activo" : "Autoscroll manual"}
               </button>
               <a className="secondary-link" href="/api/auth/logout">
                 Cerrar sesion
@@ -163,13 +269,18 @@ export default function HomePage() {
                 <h2>{item.title}</h2>
                 <p>{item.artist}</p>
                 {item.album ? <span className="meta-note">{item.album}</span> : null}
+                <span className="playback-status">{formatStatus(item)}</span>
                 {state.provider ? (
                   <span className="provider-note">Letra: {state.provider}</span>
                 ) : null}
               </div>
             </div>
 
-            <LyricsBlock text={state.lyrics?.plainText || ""} />
+            <LyricsBlock
+              text={state.lyrics?.plainText || ""}
+              activeIndex={activeLine}
+              lyricsRef={lyricsRef}
+            />
           </>
         ) : null}
       </section>
