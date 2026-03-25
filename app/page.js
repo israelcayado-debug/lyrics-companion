@@ -200,17 +200,27 @@ export default function HomePage() {
   const isSignedOut = state.status === "signed-out";
   const isLoading = state.status === "loading";
   const item = state.item;
+  const hasPlayback = Boolean(item);
 
   return (
-    <main className="app-shell">
-      <section className="hero-panel">
+    <main className={`app-shell ${hasPlayback ? "is-immersive" : ""}`}>
+      <section className={`hero-panel ${hasPlayback ? "is-condensed" : ""}`}>
         <div className="hero-copy">
           <span className="eyebrow">Spotify Lyrics Companion</span>
-          <h1>Letras grandes y limpias en tu iPhone mientras escuchas Spotify.</h1>
-          <p>
-            Pensado para abrirlo desde la pantalla de inicio. Consulta Spotify, detecta la
-            cancion actual y busca la letra automaticamente.
-          </p>
+          {hasPlayback ? (
+            <>
+              <h1>Modo karaoke.</h1>
+              <p>Vista inmersiva para seguir la letra en el iPhone sin distracciones.</p>
+            </>
+          ) : (
+            <>
+              <h1>Letras grandes y limpias en tu iPhone mientras escuchas Spotify.</h1>
+              <p>
+                Pensado para abrirlo desde la pantalla de inicio. Consulta Spotify, detecta la
+                cancion actual y busca la letra automaticamente.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="actions">
@@ -238,7 +248,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="now-playing-panel">
+      <section className={`now-playing-panel ${hasPlayback ? "is-immersive" : ""}`}>
         {isLoading ? (
           <div className="empty-state">
             <p>Cargando reproduccion actual...</p>
