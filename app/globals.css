@@ -176,8 +176,8 @@ button {
 
 .song-header {
   display: grid;
-  grid-template-columns: minmax(100px, 140px) 1fr;
-  gap: 18px;
+  grid-template-columns: minmax(72px, 96px) 1fr;
+  gap: 12px;
   align-items: center;
 }
 
@@ -190,49 +190,49 @@ button {
 }
 
 .song-meta h2 {
-  margin: 10px 0 8px;
-  font-size: clamp(1.8rem, 5vw, 3rem);
-  line-height: 1;
+  margin: 6px 0 4px;
+  font-size: clamp(1.3rem, 3.8vw, 2rem);
+  line-height: 0.98;
 }
 
 .song-meta p {
-  margin: 0 0 8px;
-  font-size: 1.1rem;
+  margin: 0 0 4px;
+  font-size: 0.98rem;
 }
 
 .meta-note,
 .provider-note {
   display: block;
-  font-size: 0.92rem;
-  margin-top: 8px;
+  font-size: 0.82rem;
+  margin-top: 5px;
 }
 
 .playback-status {
   display: inline-flex;
-  margin-top: 10px;
-  padding: 6px 12px;
+  margin-top: 7px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--accent-strong);
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .lyrics-card {
-  margin-top: 22px;
+  margin-top: 14px;
   border-top: 1px solid var(--border);
-  padding: 26px 6px 26px 0;
-  max-height: 68vh;
+  padding: 18px 4px 22px 0;
+  max-height: 74vh;
   overflow-y: auto;
   scroll-behavior: smooth;
   mask-image: linear-gradient(to bottom, transparent 0%, black 7%, black 93%, transparent 100%);
 }
 
 .lyric-line {
-  margin: 0 0 0.8rem;
-  font-size: clamp(1.45rem, 5vw, 2.35rem);
-  line-height: 1.28;
+  margin: 0 0 1rem;
+  font-size: clamp(1.55rem, 5.4vw, 2.65rem);
+  line-height: 1.2;
   color: rgba(255, 248, 239, 0.42);
   text-align: center;
   transition:
@@ -305,22 +305,46 @@ button {
   }
 
   .song-header {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 72px 1fr;
+    gap: 10px;
+    align-items: start;
   }
 
   .cover-art {
-    width: min(100%, 168px);
+    width: 72px;
+    border-radius: 16px;
+  }
+
+  .song-meta h2 {
+    font-size: clamp(1.08rem, 5vw, 1.35rem);
+    margin: 4px 0 2px;
+  }
+
+  .song-meta p {
+    font-size: 0.88rem;
+    margin-bottom: 2px;
+  }
+
+  .meta-note,
+  .provider-note {
+    font-size: 0.74rem;
+    margin-top: 3px;
+  }
+
+  .playback-status {
+    margin-top: 5px;
+    font-size: 0.64rem;
+    padding: 4px 8px;
   }
 
   .lyrics-card {
-    max-height: 71vh;
+    max-height: 78vh;
     padding-right: 2px;
   }
 
   .lyric-line {
-    font-size: clamp(1.65rem, 6.3vw, 2.5rem);
-    line-height: 1.22;
-    margin-bottom: 0.95rem;
+    font-size: clamp(1.9rem, 7.2vw, 2.95rem);
+    line-height: 1.14;
+    margin-bottom: 1.08rem;
   }
 }
